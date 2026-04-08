@@ -19,7 +19,7 @@ PROMPT_TEMPLATE = """\
 You are an expert AI researcher writing for a technical-but-accessible daily digest.
 
 Analyze the paper below and write a structured summary with EXACTLY these five sections.
-Each section should be 2–4 clear, informative sentences. Be specific — mention method names,
+Each section should be strictly 1-2 brief, high-impact sentences. Be specific — mention method names,
 numbers, benchmarks where available. Do not use markdown headers, just the bold text.
 
 Title:    {title}

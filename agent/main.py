@@ -48,37 +48,30 @@ def run_once(dry_run: bool = False, verbose: bool = False) -> None:
         print("[ERROR] No papers were fetched – check your internet connection.")
         return
 
-    # 2️⃣  Rank and pick the best paper
+    # 2️⃣  Rank and pick the best papers
     print(f"[2/4] Ranking {len(papers)} papers by impact...")
-    top_papers = ranker.rank_papers(papers, top_n=1)
-    top_paper  = top_papers[0]
+    top_3 = ranker.rank_papers(papers, top_n=3)
 
-    print(f"\n   📄 Top paper: {top_paper['title']}")
-    if verbose:
-        print(f"   Authors   : {', '.join(top_paper['authors'][:5])}")
-        print(f"   Citations : {top_paper['citation_count']}")
-        print(f"   Influence : {top_paper['influence_score']}")
-        print(f"   GH Stars  : {top_paper['github_stars']}")
-        print(f"   Impact %  : {round(top_paper.get('impact_score', 0) * 100)}%")
-        print(f"   URL       : {top_paper['arxiv_url']}")
+    digest_data = []
 
-    # 3️⃣  Summarise with Ollama
-    ollama_model = os.getenv("OLLAMA_MODEL", "mistral")
-    print(f"\n[3/4] Generating summary with Ollama ({ollama_model})...")
-    summary_raw = summarizer.summarize_paper(top_paper, model=ollama_model)
-
-    if summary_raw:
-        sections = summarizer.parse_summary(summary_raw)
-        if verbose:
-            for k, v in sections.items():
-                print(f"\n   [{k.upper()}] {v[:120]}…")
-    else:
-        print("[WARN] Ollama unavailable – using abstract as fallback.")
-        sections = summarizer.fallback_sections(top_paper)
+    # 3️⃣  Summarise each paper with Gemini
+    print(f"\n[3/4] Generating summaries with Gemini API...")
+    for idx, paper in enumerate(top_3):
+        rank = idx + 1
+        print(f"   [{rank}/3] Summarizing: {paper['title'][:60]}...")
+        
+        summary_raw = summarizer.summarize_paper(paper)
+        if summary_raw:
+            sections = summarizer.parse_summary(summary_raw)
+        else:
+            print(f"      [WARN] Summarization failed for Paper #{rank} – using fallback.")
+            sections = summarizer.fallback_sections(paper)
+        
+        digest_data.append((paper, sections))
 
     # 4️⃣  Send (or preview) the email
     print("\n[4/4] Sending email digest...")
-    success = mailer.send_email(top_paper, sections, dry_run=dry_run)
+    success = mailer.send_email(digest_data, dry_run=dry_run)
     if not success:
         print("[ERROR] Email step failed. Check the error message above.")
     else:

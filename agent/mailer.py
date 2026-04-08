@@ -22,47 +22,132 @@ load_dotenv()
 #  HTML EMAIL TEMPLATE
 # ─────────────────────────────────────────────────────────────
 
-def _build_html(paper: dict, sections: dict[str, str], date_str: str) -> str:
-    authors_str = ", ".join(paper["authors"])
-    if len(paper["authors"]) >= 5:
-        authors_str += " et al."
+def _build_html(papers_data: list[tuple[dict, dict[str, str]]], date_str: str) -> str:
+    cards_html = ""
+    
+    for idx, (paper, sections) in enumerate(papers_data):
+        rank = idx + 1
+        authors_str = ", ".join(paper["authors"])
+        if len(paper["authors"]) >= 5:
+            authors_str += " et al."
 
-    impact_pct   = round(paper.get("impact_score", 0) * 100)
-    pub_date     = paper["published"][:10]
-    cit_count    = paper["citation_count"]
-    inf_count    = paper["influence_score"]
-    gh_stars     = paper["github_stars"] if paper["github_stars"] else "—"
+        impact_pct   = round(paper.get("impact_score", 0) * 100)
+        pub_date     = paper["published"][:10]
+        cit_count    = paper["citation_count"]
+        inf_count    = paper["influence_score"]
+        gh_stars     = paper["github_stars"] if paper["github_stars"] else "—"
 
-    section_html = ""
-    section_data = [
-        ("🎯", "Problem",      "problem",     "#ef4444"),
-        ("💡", "Solution",     "solution",    "#10b981"),
-        ("📊", "Results",      "results",     "#3b82f6"),
-        ("⚠️", "Limitations", "limitations", "#f59e0b"),
-        ("🚀", "Why It Matters","impact",     "#a855f7"),
-    ]
-    for icon, label, key, colour in section_data:
-        content = sections.get(key) or "See the paper for details."
-        section_html += f"""
-        <tr>
-          <td style="padding:12px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                   style="background:#1e1e2e;border-radius:12px;
-                          border-left:3px solid {colour};overflow:hidden;">
-              <tr>
-                <td style="padding:18px 20px;">
-                  <p style="margin:0 0 8px;font-size:11px;font-weight:700;
-                             text-transform:uppercase;letter-spacing:1px;color:#9ca3af;">
-                    {icon}&nbsp; {label}
-                  </p>
-                  <p style="margin:0;font-size:14px;line-height:1.75;color:#d1d5db;">
-                    {content}
-                  </p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>"""
+        section_html = ""
+        section_data = [
+            ("🎯", "Problem",      "problem",     "#ef4444"),
+            ("💡", "Solution",     "solution",    "#10b981"),
+            ("📊", "Results",      "results",     "#3b82f6"),
+            ("⚠️", "Limitations", "limitations", "#f59e0b"),
+            ("🚀", "Why It Matters","impact",     "#a855f7"),
+        ]
+        for icon, label, key, colour in section_data:
+            content = sections.get(key) or "See the paper for details."
+            section_html += f"""
+            <tr>
+              <td style="padding:8px 0;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                       style="background:#1e1e2e;border-radius:10px;
+                              border-left:3px solid {colour};overflow:hidden;">
+                  <tr>
+                    <td style="padding:14px 16px;">
+                      <p style="margin:0 0 4px;font-size:10px;font-weight:700;
+                                 text-transform:uppercase;letter-spacing:1px;color:#9ca3af;">
+                        {icon}&nbsp; {label}
+                      </p>
+                      <p style="margin:0;font-size:13px;line-height:1.6;color:#d1d5db;">
+                        {content}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>"""
+
+        # Choose badge text
+        badge_text = f"🔥 Rank #{rank} Impact" if rank == 1 else f"📈 Rank #{rank}"
+
+        cards_html += f"""
+                <!--– Paper card #{rank} –-->
+                <tr>
+                  <td style="padding:24px 0 0;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                           style="background:linear-gradient(135deg,#1e1e2e,#1a1a28);
+                                  border:1px solid rgba(99,102,241,0.2);
+                                  border-radius:16px;overflow:hidden;">
+                      <!-- Top gradient bar -->
+                      <tr>
+                        <td style="height:3px;
+                                   background:linear-gradient(90deg,#6366f1,#a855f7,#ec4899);">
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:20px 24px 24px;">
+
+                          <!-- Badge -->
+                          <p style="margin:0 0 12px;display:inline-block;
+                                    background:rgba(99,102,241,0.15);
+                                    border:1px solid rgba(99,102,241,0.3);
+                                    border-radius:8px;padding:4px 10px;
+                                    font-size:10px;font-weight:700;color:#a5b4fc;
+                                    text-transform:uppercase;letter-spacing:0.5px;">
+                            {badge_text}
+                          </p>
+
+                          <!-- Title -->
+                          <h2 style="margin:0 0 12px;font-size:18px;font-weight:600;
+                                     color:#ffffff;line-height:1.4;">
+                            {paper['title']}
+                          </h2>
+
+                          <!-- Meta -->
+                          <p style="margin:0 0 16px;font-size:11px;color:#9ca3af;
+                                    line-height:1.6;">
+                            👤 {authors_str}<br>
+                            📚 {cit_count} citations &nbsp;·&nbsp; ⭐ {inf_count} influential citations
+                          </p>
+
+                          <!-- CTA buttons -->
+                          <table cellpadding="0" cellspacing="0" border="0"
+                                 style="margin-bottom:20px;">
+                            <tr>
+                              <td style="padding-right:8px;">
+                                <a href="{paper['arxiv_url']}"
+                                   style="display:inline-block;padding:8px 18px;
+                                          background:linear-gradient(135deg,#6366f1,#8b5cf6);
+                                          color:#ffffff;text-decoration:none;
+                                          border-radius:8px;font-size:12px;font-weight:500;">
+                                  📄 View Paper
+                                </a>
+                              </td>
+                              <td>
+                                <a href="{paper['pdf_url']}"
+                                   style="display:inline-block;padding:8px 18px;
+                                          background:rgba(99,102,241,0.1);
+                                          border:1px solid rgba(99,102,241,0.35);
+                                          color:#a5b4fc;text-decoration:none;
+                                          border-radius:8px;font-size:12px;font-weight:500;">
+                                  ⬇️ PDF
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+
+                          <!-- Summary sections -->
+                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            {section_html}
+                          </table>
+
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+        """
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -98,14 +183,14 @@ def _build_html(paper: dict, sections: dict[str, str], date_str: str) -> str:
 
               <h1 style="margin:0 0 8px;font-size:30px;font-weight:700;
                           color:#ffffff;line-height:1.2;">
-                The Paper Making
+                The Papers Making
                 <span style="color:#a5b4fc;">
                   Waves Today
                 </span>
               </h1>
 
               <p style="margin:0;font-size:13px;color:#9ca3af;">
-                {date_str} &nbsp;·&nbsp; Curated from arXiv · Semantic Scholar · Papers With Code
+                {date_str} &nbsp;·&nbsp; Curated from Hugging Face Trending AI Research
               </p>
             </td>
           </tr>
@@ -114,131 +199,9 @@ def _build_html(paper: dict, sections: dict[str, str], date_str: str) -> str:
           <tr>
             <td style="background:#13131a;padding:0 40px;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
-
-                <!--– Paper card –-->
-                <tr>
-                  <td style="padding:24px 0 0;">
-                    <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                           style="background:linear-gradient(135deg,#1e1e2e,#1a1a28);
-                                  border:1px solid rgba(99,102,241,0.2);
-                                  border-radius:16px;overflow:hidden;">
-                      <!-- Top gradient bar -->
-                      <tr>
-                        <td style="height:3px;
-                                   background:linear-gradient(90deg,#6366f1,#a855f7,#ec4899);">
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding:24px 28px 28px;">
-
-                          <!-- Badge -->
-                          <p style="margin:0 0 14px;display:inline-block;
-                                    background:rgba(99,102,241,0.15);
-                                    border:1px solid rgba(99,102,241,0.3);
-                                    border-radius:8px;padding:4px 12px;
-                                    font-size:11px;font-weight:700;color:#a5b4fc;
-                                    text-transform:uppercase;letter-spacing:0.5px;">
-                            🔥 Highest Impact This Week
-                          </p>
-
-                          <!-- Title -->
-                          <h2 style="margin:0 0 14px;font-size:20px;font-weight:600;
-                                     color:#ffffff;line-height:1.4;">
-                            {paper['title']}
-                          </h2>
-
-                          <!-- Meta -->
-                          <p style="margin:0 0 20px;font-size:12px;color:#9ca3af;
-                                    line-height:1.7;">
-                            👤 {authors_str}<br>
-                            📅 Published: {pub_date}<br>
-                            📚 {cit_count} citations &nbsp;·&nbsp; ⭐ {inf_count} influential citations
-                          </p>
-
-                          <!-- CTA buttons -->
-                          <table cellpadding="0" cellspacing="0" border="0"
-                                 style="margin-bottom:24px;">
-                            <tr>
-                              <td style="padding-right:10px;">
-                                <a href="{paper['arxiv_url']}"
-                                   style="display:inline-block;padding:9px 22px;
-                                          background:linear-gradient(135deg,#6366f1,#8b5cf6);
-                                          color:#ffffff;text-decoration:none;
-                                          border-radius:8px;font-size:13px;font-weight:500;">
-                                  📄 View Paper
-                                </a>
-                              </td>
-                              <td>
-                                <a href="{paper['pdf_url']}"
-                                   style="display:inline-block;padding:9px 22px;
-                                          background:rgba(99,102,241,0.1);
-                                          border:1px solid rgba(99,102,241,0.35);
-                                          color:#a5b4fc;text-decoration:none;
-                                          border-radius:8px;font-size:13px;font-weight:500;">
-                                  ⬇️ Download PDF
-                                </a>
-                              </td>
-                            </tr>
-                          </table>
-
-                          <!-- Stats bar -->
-                          <table width="100%" cellpadding="0" cellspacing="0" border="0"
-                                 style="background:rgba(255,255,255,0.03);
-                                        border:1px solid rgba(255,255,255,0.08);
-                                        border-radius:12px;margin-bottom:24px;">
-                            <tr>
-                              <td align="center" style="padding:16px;">
-                                <p style="margin:0;font-size:22px;font-weight:700;
-                                           color:#ffffff;">{cit_count}</p>
-                                <p style="margin:4px 0 0;font-size:10px;color:#6b7280;
-                                           text-transform:uppercase;letter-spacing:0.5px;">
-                                  Citations
-                                </p>
-                              </td>
-                              <td align="center"
-                                  style="padding:16px;border-left:1px solid rgba(255,255,255,0.06);">
-                                <p style="margin:0;font-size:22px;font-weight:700;
-                                           color:#ffffff;">{inf_count}</p>
-                                <p style="margin:4px 0 0;font-size:10px;color:#6b7280;
-                                           text-transform:uppercase;letter-spacing:0.5px;">
-                                  Highly Influential
-                                </p>
-                              </td>
-                              <td align="center"
-                                  style="padding:16px;border-left:1px solid rgba(255,255,255,0.06);">
-                                <p style="margin:0;font-size:22px;font-weight:700;
-                                           color:#ffffff;">{gh_stars}</p>
-                                <p style="margin:4px 0 0;font-size:10px;color:#6b7280;
-                                           text-transform:uppercase;letter-spacing:0.5px;">
-                                  GitHub Stars
-                                </p>
-                              </td>
-                              <td align="center"
-                                  style="padding:16px;border-left:1px solid rgba(255,255,255,0.06);">
-                                <p style="margin:0;font-size:22px;font-weight:700;
-                                           color:#ffffff;">{impact_pct}%</p>
-                                <p style="margin:4px 0 0;font-size:10px;color:#6b7280;
-                                           text-transform:uppercase;letter-spacing:0.5px;">
-                                  Impact Score
-                                </p>
-                              </td>
-                            </tr>
-                          </table>
-
-                          <!-- Summary sections -->
-                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                            {section_html}
-                          </table>
-
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-
+                {cards_html}
                 <!-- Spacing -->
                 <tr><td style="height:32px;"></td></tr>
-
               </table>
             </td>
           </tr>
@@ -254,8 +217,8 @@ def _build_html(paper: dict, sections: dict[str, str], date_str: str) -> str:
               </p>
               <p style="margin:0;font-size:11px;color:#4b5563;line-height:1.7;">
                 Automatically generated by your personal AI research agent.<br>
-                Papers sourced from arXiv · Semantic Scholar · Papers With Code<br>
-                Summarised by Ollama (local AI) · Delivered daily at 8:00 AM
+                Trending papers curated from Hugging Face & Semantic Scholar<br>
+                Summarised by Google Gemini · Delivered daily
               </p>
             </td>
           </tr>
@@ -270,37 +233,38 @@ def _build_html(paper: dict, sections: dict[str, str], date_str: str) -> str:
     return html
 
 
+
 # ─────────────────────────────────────────────────────────────
 #  PLAIN-TEXT FALLBACK
 # ─────────────────────────────────────────────────────────────
 
-def _build_plain(paper: dict, sections: dict[str, str], date_str: str) -> str:
+def _build_plain(papers_data: list[tuple[dict, dict[str, str]]], date_str: str) -> str:
     divider = "─" * 60
-    return (
-        f"AI Research Digest — {date_str}\n"
-        f"{divider}\n\n"
-        f"TOP PAPER: {paper['title']}\n"
-        f"Authors:   {', '.join(paper['authors'])}\n"
-        f"Published: {paper['published'][:10]}\n\n"
-        f"View Paper:   {paper['arxiv_url']}\n"
-        f"Download PDF: {paper['pdf_url']}\n\n"
-        f"{divider}\n\n"
-        f"PROBLEM:\n{sections.get('problem','')}\n\n"
-        f"SOLUTION:\n{sections.get('solution','')}\n\n"
-        f"RESULTS:\n{sections.get('results','')}\n\n"
-        f"LIMITATIONS:\n{sections.get('limitations','')}\n\n"
-        f"WHY IT MATTERS:\n{sections.get('impact','')}\n\n"
-        f"{divider}\n"
-        f"Sent at 8:00 AM · AI Research Digest Agent\n"
-    )
+    content = f"AI Research Digest — {date_str}\n{divider}\n\n"
+    
+    for idx, (paper, sections) in enumerate(papers_data):
+        rank = idx + 1
+        content += (
+            f"PAPER #{rank}: {paper['title']}\n"
+            f"Authors:   {', '.join(paper['authors'])}\n"
+            f"View:      {paper['arxiv_url']}\n\n"
+            f"PROBLEM: {sections.get('problem','')}\n"
+            f"SOLUTION: {sections.get('solution','')}\n"
+            f"RESULTS: {sections.get('results','')}\n"
+            f"IMPACT: {sections.get('impact','')}\n\n"
+            f"{divider}\n\n"
+        )
+    
+    content += "Delivered daily · AI Research Digest Agent\n"
+    return content
 
 
 # ─────────────────────────────────────────────────────────────
 #  SEND EMAIL
 # ─────────────────────────────────────────────────────────────
 
-def send_email(paper: dict, sections: dict[str, str], dry_run: bool = False) -> bool:
-    """Compose and send (or preview) the digest email."""
+def send_email(papers_data: list[tuple[dict, dict[str, str]]], dry_run: bool = False) -> bool:
+    """Compose and send (or preview) the digest email for multiple papers."""
     sender_email    = os.getenv("SENDER_EMAIL", "").strip()
     sender_password = os.getenv("SENDER_APP_PASSWORD", "").strip().replace(" ", "")
     
@@ -315,12 +279,16 @@ def send_email(paper: dict, sections: dict[str, str], dry_run: bool = False) -> 
         )
         return False
 
-    date_str  = datetime.now().strftime("%A, %B %d, %Y")
-    pub_short = paper["published"][:60]
-    subject   = f"🔬 AI Research Digest — {datetime.now().strftime('%b %d')} | {paper['title'][:55]}…"
+    if not papers_data:
+        print("[ERROR] No paper data provided to send_email.")
+        return False
 
-    html_body  = _build_html(paper, sections, date_str)
-    plain_body = _build_plain(paper, sections, date_str)
+    date_str = datetime.now().strftime("%A, %B %d, %Y")
+    first_title = papers_data[0][0]["title"]
+    subject = f"🔬 AI Research Digest: {first_title[:50]}… + {len(papers_data)-1} more"
+
+    html_body  = _build_html(papers_data, date_str)
+    plain_body = _build_plain(papers_data, date_str)
 
     # ── Dry-run: just save HTML preview ──────────────────────
     if dry_run:
@@ -361,3 +329,4 @@ def send_email(paper: dict, sections: dict[str, str], dry_run: bool = False) -> 
         print(f"[ERROR] Unexpected error while sending email: {exc}")
 
     return False
+
