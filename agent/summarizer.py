@@ -18,7 +18,7 @@ import google.generativeai as genai
 PROMPT_TEMPLATE = """\
 You are an expert AI researcher writing for a technical-but-accessible daily digest.
 
-Analyze the paper below and write a structured summary with EXACTLY these five sections.
+Analyze the paper below and write a structured summary with EXACTLY these six sections.
 Each section should be strictly 1-2 brief, high-impact sentences. Be specific — mention method names,
 numbers, benchmarks where available. Do not use markdown headers, just the bold text.
 
@@ -42,6 +42,9 @@ Respond using ONLY this exact format (keep the bold markers at the start of the 
 
 **IMPACT:**
 <your text>
+
+**WHY IT MATTERS:**
+<Give a brief reasoning on why this paper is currently a hot topic and assign a 'Relevance Score' out of 10 based on industry buzz.>
 """
 
 
@@ -84,16 +87,16 @@ import re
 def parse_summary(text: str) -> dict[str, str]:
     """
     Parse the LLM output into a dict with keys:
-        problem, solution, results, limitations, impact
+        problem, solution, results, limitations, impact, why_it_matters
     """
-    sections = {k: "" for k in ("problem", "solution", "results", "limitations", "impact")}
+    sections = {k: "" for k in ("problem", "solution", "results", "limitations", "impact", "why_it_matters")}
 
     if not text:
         return sections
 
-    # Robust regex to catch anything like "**Problem:**", "### PROBLEM", "1. Problem:", etc.
+    # Robust regex to catch sections
     header_pattern = re.compile(
-        r'^\s*(?:\d+\.)?\s*#*\s*\*?\*?\s*(PROBLEM|SOLUTION|RESULTS|LIMITATIONS|IMPACT)\s*\*?\*?\s*:?', 
+        r'^\s*(?:\d+\.)?\s*#*\s*\*?\*?\s*(PROBLEM|SOLUTION|RESULTS|LIMITATIONS|IMPACT|WHY IT MATTERS)\s*\*?\*?\s*:?', 
         re.IGNORECASE
     )
 
@@ -105,10 +108,10 @@ def parse_summary(text: str) -> dict[str, str]:
             continue
             
         match = header_pattern.search(stripped)
-        if match and match.start() == 0:  # Matches at the beginning of the line
-            current_section = match.group(1).lower()
+        if match and match.start() == 0:
+            current_section = match.group(1).lower().replace(" ", "_")
             
-            # Check if there is actual text on the same line after the header (e.g., "**Problem:** The authors note...")
+            # Check if there is actual text on the same line
             after_header = stripped[match.end():].strip().strip("*").strip()
             if after_header:
                 sections[current_section] = after_header

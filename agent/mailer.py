@@ -68,6 +68,30 @@ def _build_html(papers_data: list[tuple[dict, dict[str, str]]], date_str: str) -
               </td>
             </tr>"""
 
+        # New reasoning box
+        reasoning_html = ""
+        if sections.get("why_it_matters"):
+            reasoning_html = f"""
+            <tr>
+              <td style="padding:16px 0 8px;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                       style="background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);
+                              border-radius:12px;">
+                  <tr>
+                    <td style="padding:14px 18px;">
+                      <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:#c7d2fe;
+                                 text-transform:uppercase;letter-spacing:0.8px;">
+                        ✨ Why it matters
+                      </p>
+                      <p style="margin:0;font-size:13.5px;line-height:1.6;color:#e0e7ff;font-style:italic;">
+                        &ldquo;{sections.get('why_it_matters')}&rdquo;
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>"""
+
         # Choose badge text
         badge_text = f"🔥 Rank #{rank} Impact" if rank == 1 else f"📈 Rank #{rank}"
 
@@ -99,7 +123,7 @@ def _build_html(papers_data: list[tuple[dict, dict[str, str]]], date_str: str) -
                           </p>
 
                           <!-- Title -->
-                          <h2 style="margin:0 0 12px;font-size:18px;font-weight:600;
+                          <h2 style="margin:0 0 10px;font-size:18px;font-weight:600;
                                      color:#ffffff;line-height:1.4;">
                             {paper['title']}
                           </h2>
@@ -107,13 +131,12 @@ def _build_html(papers_data: list[tuple[dict, dict[str, str]]], date_str: str) -
                           <!-- Meta -->
                           <p style="margin:0 0 16px;font-size:11px;color:#9ca3af;
                                     line-height:1.6;">
-                            👤 {authors_str}<br>
-                            📚 {cit_count} citations &nbsp;·&nbsp; ⭐ {inf_count} influential citations
+                            👤 {authors_str} &nbsp;·&nbsp; 📅 {pub_date}
                           </p>
 
                           <!-- CTA buttons -->
                           <table cellpadding="0" cellspacing="0" border="0"
-                                 style="margin-bottom:20px;">
+                                 style="margin-bottom:12px;">
                             <tr>
                               <td style="padding-right:8px;">
                                 <a href="{paper['arxiv_url']}"
@@ -136,6 +159,14 @@ def _build_html(papers_data: list[tuple[dict, dict[str, str]]], date_str: str) -
                               </td>
                             </tr>
                           </table>
+
+                          <!-- AI Reasoning -->
+                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            {reasoning_html}
+                          </table>
+
+                          <!-- Technical breakdown spacer -->
+                          <div style="height:12px;"></div>
 
                           <!-- Summary sections -->
                           <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -248,6 +279,7 @@ def _build_plain(papers_data: list[tuple[dict, dict[str, str]]], date_str: str) 
             f"PAPER #{rank}: {paper['title']}\n"
             f"Authors:   {', '.join(paper['authors'])}\n"
             f"View:      {paper['arxiv_url']}\n\n"
+            f"WHY IT MATTERS: {sections.get('why_it_matters','')}\n"
             f"PROBLEM: {sections.get('problem','')}\n"
             f"SOLUTION: {sections.get('solution','')}\n"
             f"RESULTS: {sections.get('results','')}\n"

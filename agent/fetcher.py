@@ -7,7 +7,7 @@ fetcher.py — Fetches latest AI research papers from multiple credible sources:
 
 import requests
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # ── API endpoints ─────────────────────────────────────────────
 ARXIV_API_URL          = "http://export.arxiv.org/api/query"
@@ -16,41 +16,47 @@ PAPERS_WITH_CODE_API   = "https://paperswithcode.com/api/v1"
 
 HF_API_URL = "https://huggingface.co/api/daily_papers"
 
-def fetch_trending_papers() -> list[dict]:
-    """Fetch the top AI/ML papers the industry is talking about from Hugging Face Daily Papers."""
-    try:
-        response = requests.get(HF_API_URL, timeout=30)
-        response.raise_for_status()
-        data = response.json()
-    except Exception as exc:
-        print(f"[WARNING] Hugging Face fetch failed: {exc}")
-        return []
-
-    papers = []
-    for entry in data:
-        paper_data = entry.get("paper", {})
-        if not paper_data:
-            continue
-            
-        arxiv_id = paper_data.get("id", "")
-        if not arxiv_id:
+def fetch_trending_papers(days_back: int = 14) -> list[dict]:
+    """Fetch the top AI/ML papers from the last 14 days on Hugging Face Daily Papers."""
+    all_papers = {}
+    
+    for i in range(days_back):
+        date_str = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        url = f"{HF_API_URL}?date={date_str}"
+        
+        try:
+            # print(f"   [FETCH] {date_str}...")
+            response = requests.get(url, timeout=20)
+            if response.status_code != 200:
+                continue
+            data = response.json()
+        except Exception:
             continue
 
-        papers.append({
-            "title":          paper_data.get("title", "").replace("\n", " ").strip(),
-            "abstract":       paper_data.get("summary", "").replace("\n", " ").strip(),
-            "authors":        [a.get("name", "") for a in paper_data.get("authors", [])][:5],
-            "published":      paper_data.get("publishedAt", ""),
-            "arxiv_id":       arxiv_id,
-            "arxiv_url":      f"https://arxiv.org/abs/{arxiv_id}",
-            "pdf_url":        f"https://arxiv.org/pdf/{arxiv_id}",
-            "categories":     ["AI/ML"],
-            "citation_count": 0,
-            "influence_score": 0,
-            "github_stars":   paper_data.get("upvotes", 0),  # We'll use HF upvotes as the baseline 'stars'
-        })
+        for entry in data:
+            paper_data = entry.get("paper", {})
+            if not paper_data:
+                continue
+                
+            arxiv_id = paper_data.get("id", "")
+            if not arxiv_id or arxiv_id in all_papers:
+                continue
 
-    return papers
+            all_papers[arxiv_id] = {
+                "title":          paper_data.get("title", "").replace("\n", " ").strip(),
+                "abstract":       paper_data.get("summary", "").replace("\n", " ").strip(),
+                "authors":        [a.get("name", "") for a in paper_data.get("authors", [])][:5],
+                "published":      paper_data.get("publishedAt", ""),
+                "arxiv_id":       arxiv_id,
+                "arxiv_url":      f"https://arxiv.org/abs/{arxiv_id}",
+                "pdf_url":        f"https://arxiv.org/pdf/{arxiv_id}",
+                "categories":     ["AI/ML"],
+                "citation_count": 0,
+                "influence_score": 0,
+                "github_stars":   paper_data.get("upvotes", 0),
+            }
+
+    return list(all_papers.values())
 
 
 def enrich_with_semantic_scholar(papers: list[dict], batch_size: int = 10) -> list[dict]:
@@ -90,10 +96,10 @@ def enrich_with_semantic_scholar(papers: list[dict], batch_size: int = 10) -> li
 
 
 def fetch_all_papers() -> list[dict]:
-    """End-to-end fetch: HF Daily Papers → Semantic Scholar enrichment → GitHub stars."""
-    print("[INFO] Fetching trending papers from Hugging Face Daily Papers...")
-    papers = fetch_trending_papers()
-    print(f"[INFO] Retrieved {len(papers)} trending papers from Hugging Face")
+    """End-to-end fetch: HF 14-Day Trending → Semantic Scholar enrichment."""
+    print("[INFO] Fetching trending papers from the last 14 days (Hugging Face)...")
+    papers = fetch_trending_papers(days_back=14)
+    print(f"[INFO] Retrieved {len(papers)} unique trending papers from last 14 days")
 
     if not papers:
         return []
