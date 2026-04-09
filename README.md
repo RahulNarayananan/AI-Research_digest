@@ -18,4 +18,3 @@ An autonomous AI agent that fetches, ranks, and summarizes the top trending rese
 4. Configure GitHub Repository Secrets for automated runs.
 
 ---
-*Created with ❤️ by Antigravity*
