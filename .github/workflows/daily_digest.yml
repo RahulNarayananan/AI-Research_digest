@@ -2,7 +2,7 @@ name: Daily AI Research Digest
 
 on:
   schedule:
-    # Runs at 8:00 AM UTC every day
+    # Runs at 00:00 UTC (8:00 AM SGT) every day
     - cron: '0 0 * * *'
   # Allows you to trigger the run manually from the GitHub Actions tab
   workflow_dispatch:
