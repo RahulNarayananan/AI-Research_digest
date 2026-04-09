@@ -32,11 +32,17 @@ def rank_papers(papers: list[dict], top_n: int = 1) -> list[dict]:
         inf_norm  = paper["influence_score"] / max_inf
         star_norm = paper["github_stars"]    / max_star
 
-        paper["impact_score"] = (
+        # Base composite score
+        base_score = (
             cit_norm  * 0.40 +
             inf_norm  * 0.40 +
             star_norm * 0.20
         )
+
+        # Cross-platform bonus: 20% boost if discovered on both HF and PWC
+        source_bonus = 1.2 if paper.get("source") == "HF + PWC" else 1.0
+        
+        paper["impact_score"] = base_score * source_bonus
 
     ranked = sorted(papers, key=lambda p: p["impact_score"], reverse=True)
 
