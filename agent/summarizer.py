@@ -55,26 +55,34 @@ def summarize_paper(paper: dict, model: str = "") -> str | None:
         print("[ERROR] GEMINI_API_KEY is not set in .env")
         return None
 
+    abstract = paper.get("abstract", "").strip()
+    if not abstract:
+        print(f"[WARN] No abstract available for: {paper.get('title', 'Unknown')}")
+        return None
+
+    authors = paper.get("authors") or ["Unknown"]
+
     prompt = PROMPT_TEMPLATE.format(
-        title    = paper["title"],
-        authors  = ", ".join(paper["authors"]),
-        abstract = paper["abstract"],
+        title    = paper.get("title", ""),
+        authors  = ", ".join(authors),
+        abstract = abstract,
     )
 
     try:
         genai.configure(api_key=api_key)
-        # Using gemini-1.5-flash as it is extremely fast and very generous on the free tier
         gemini_model = genai.GenerativeModel("gemini-1.5-flash")
         
         response = gemini_model.generate_content(
             prompt,
             generation_config=genai.types.GenerationConfig(
-                temperature=0.25,
+                temperature=0.3,
                 top_p=0.90,
-                max_output_tokens=600,
+                max_output_tokens=1024,  # Increased: 6 sections need more room
             )
         )
-        return response.text.strip()
+        raw = response.text.strip()
+        print(f"      [GEMINI] Raw response ({len(raw)} chars): {raw[:120]}...")
+        return raw
 
     except Exception as exc:
         print(f"[ERROR] Gemini API Summarization failed: {exc}")
@@ -128,15 +136,18 @@ def parse_summary(text: str) -> dict[str, str]:
 
 
 def fallback_sections(paper: dict) -> dict[str, str]:
-    """Return placeholder sections when Ollama is unavailable."""
-    abstract_short = paper["abstract"][:350] + "…" if len(paper["abstract"]) > 350 else paper["abstract"]
+    """Return best-effort sections from abstract when Gemini is unavailable."""
+    abstract = paper.get("abstract", "") or ""
+    # Split abstract into rough halves to approximate problem/solution
+    mid = len(abstract) // 2
+    problem_text  = abstract[:mid].strip() or "See abstract for details."
+    solution_text = abstract[mid:].strip() or "See abstract for details."
+
     return {
-        "problem":     abstract_short,
-        "solution":    "Read the full paper for the complete methodology.",
-        "results":     "Quantitative results are detailed in the paper.",
-        "limitations": "Refer to the paper's conclusion for acknowledged limitations.",
-        "impact":      (
-            f"This paper was ranked as today's highest-impact AI paper based on "
-            f"{paper['citation_count']} citations and {paper['influence_score']} influential citations."
-        ),
+        "problem":         problem_text,
+        "solution":        solution_text,
+        "results":         "See the paper for quantitative results.",
+        "limitations":     "See the paper's conclusion for limitations.",
+        "impact":          "This paper was selected based on trending signals from Hugging Face and Papers With Code.",
+        "why_it_matters":  "This paper is currently trending in the AI research community.",
     }

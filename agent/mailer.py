@@ -319,7 +319,7 @@ def send_email(papers_data: list[tuple[dict, dict[str, str]]], dry_run: bool = F
     if not sender_email or not sender_password:
         print(
             "[ERROR] SENDER_EMAIL or SENDER_APP_PASSWORD is missing.\n"
-            "        Copy .env.example → .env and fill in your Gmail credentials."
+            "        Copy .env.example -> .env and fill in your Gmail credentials."
         )
         return False
 
@@ -339,7 +339,7 @@ def send_email(papers_data: list[tuple[dict, dict[str, str]]], dry_run: bool = F
         preview_path = "email_preview.html"
         with open(preview_path, "w", encoding="utf-8") as f:
             f.write(html_body)
-        print(f"[DRY RUN] HTML preview saved to → {preview_path}")
+        print(f"[DRY RUN] HTML preview saved to -> {preview_path}")
         print(f"[DRY RUN] Subject : {subject}")
         print(f"[DRY RUN] To      : {', '.join(recipients)}")
         return True
@@ -358,7 +358,7 @@ def send_email(papers_data: list[tuple[dict, dict[str, str]]], dry_run: bool = F
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, recipients, msg.as_string())
-        print(f"[SUCCESS] Email delivered → {', '.join(recipients)}")
+        print(f"[SUCCESS] Email delivered -> {', '.join(recipients)}")
         return True
 
     except smtplib.SMTPAuthenticationError:
